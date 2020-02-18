@@ -1,5 +1,4 @@
-# StockFlow
-> The Motivational Dividend Stock Dashboard.
+# StockFlow Dividend Dashboard
 
 ![StockFlow Logo](stockflow.png)
 
