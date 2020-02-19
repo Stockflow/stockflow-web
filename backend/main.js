@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+'use strict';
+
 // Load environment
 require('dotenv').config()
 
@@ -7,6 +9,10 @@ require('dotenv').config()
 import {existsSync, readFileSync, writeFileSync} from 'fs'
 import {join} from 'path'
 import AlphaVantage from 'alphavantage'
+import jayson from 'jayson';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import connect from 'connect';
 
 // Constants
 const AUTOCACHE_PATH = join(__dirname, 'alphavantage.cache')
@@ -103,4 +109,31 @@ async function getDividendPayments(symbol) {
   }
 }
 
-main()
+const ApiPaths = {
+  Debug: {
+    ping: 'ping',
+  }
+}
+
+// Define JSON-RPC Server
+const server = jayson.Server({
+
+  //
+  // Debug
+  //
+
+  [ApiPaths.Debug.ping]: function ping(args, cb) {
+      cb(null, 'pong')
+  },
+})
+
+// Configure server
+const app = connect()
+app.use(cors({methods: ['POST']}))
+app.use(bodyParser.json())
+app.use(server.middleware())
+
+// Listen
+app.listen(process.env.PORT, process.env.HOST, () => {
+  console.log(`Listening on port ${process.env.PORT}.`)
+})
