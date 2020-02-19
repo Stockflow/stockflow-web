@@ -1,36 +1,37 @@
 #!/usr/bin/env node
 
-'use strict';
+// Import libraries
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import AlphaVantage from 'alphavantage'
+import jayson from 'jayson'
+import cors from 'cors'
+import bodyParser from 'body-parser'
+import connect from 'connect'
+
+'use strict'
 
 // Load environment
 require('dotenv').config()
-
-// Import libraries
-import {existsSync, readFileSync, writeFileSync} from 'fs'
-import {join} from 'path'
-import AlphaVantage from 'alphavantage'
-import jayson from 'jayson';
-import cors from 'cors';
-import bodyParser from 'body-parser';
-import connect from 'connect';
 
 // Constants
 const AUTOCACHE_PATH = join(__dirname, 'alphavantage.cache')
 
 // Initialize AlphaVantage API Client
-const alpha = AlphaVantage({key: process.env.ALPHAVANTAGE})
+const alpha = AlphaVantage({ key: process.env.ALPHAVANTAGE })
 
 // Cache to circumvent AlphaVantage API restrictions
 class AutoCache {
-  static cache = {}
-
-  static tryInit() {
-    if (Object.keys(AutoCache.cache).length === 0 && existsSync(AUTOCACHE_PATH)) {
+  static tryInit () {
+    if (
+      Object.keys(AutoCache.cache).length === 0 &&
+      existsSync(AUTOCACHE_PATH)
+    ) {
       AutoCache.cache = JSON.parse(readFileSync(AUTOCACHE_PATH))
     }
   }
 
-  static verifyArgs(args1, args2) {
+  static verifyArgs (args1, args2) {
     let valid = args1.length === args2.length
     for (const i of args1.keys()) {
       if (!valid) break
@@ -40,56 +41,82 @@ class AutoCache {
     return valid
   }
 
-  static retrieve(key, args) {
+  static retrieve (key, args) {
     console.log(`[Cache::FetchDry] ${key}`)
     AutoCache.tryInit()
-    return key in AutoCache.cache && AutoCache.verifyArgs(args, AutoCache.cache[key].args) ? AutoCache.cache[key].data : null
+    return key in AutoCache.cache &&
+      AutoCache.verifyArgs(args, AutoCache.cache[key].args)
+      ? AutoCache.cache[key].data
+      : null
   }
 
-  static store(key, args, data) {
+  static store (key, args, data) {
     console.log(`[Cache::Store] ${key}`)
-    AutoCache.cache[key] = {args, data}
+    AutoCache.cache[key] = { args, data }
     writeFileSync(AUTOCACHE_PATH, JSON.stringify(AutoCache.cache))
     return data
   }
 
-  static async _call(key, fn, ...args) {
+  static async _call (key, fn, ...args) {
     console.log(`[Cache::FetchWet] ${key}`)
     const raw_data = await fn(...args)
     return alpha.util.polish(raw_data)
   }
 
-  static async call(key, fn, ...args) {
-    return AutoCache.retrieve(key, args) || AutoCache.store(key, args, await AutoCache._call(key, fn, ...args))
+  static async call (key, fn, ...args) {
+    return (
+      AutoCache.retrieve(key, args) ||
+      AutoCache.store(key, args, await AutoCache._call(key, fn, ...args))
+    )
   }
 }
-
-async function main() {
-  console.log(await getDividendStatistics('O'))
-}
+AutoCache.cache = {}
 
 class DividendProjector {
-  static getTotalDividendAmount(data, timeframe_in_months) {
-    return data.slice(1, timeframe_in_months + 1).reduce((acc, {dividend}) => acc + dividend, 0.00)
+  static getTotalDividendAmount (data, timeframeInMonths) {
+    return data
+      .slice(1, timeframeInMonths + 1)
+      .reduce((acc, { dividend }) => acc + dividend, 0.0)
   }
 
-  static getYearlyAverageDividendYield(data) {
-    const valid_periods = data.slice(1).slice(0, 12 * 5) // five year averages
-    const index_of_first_paid_period = valid_periods.findIndex(p => p.dividend > 0)
-    const index_of_last_paid_period = valid_periods.length - 1 - [...valid_periods].reverse().findIndex(p => p.dividend > 0)
-    const valid_periods_after_first_paid = valid_periods.slice(index_of_first_paid_period, index_of_last_paid_period)
-    const period_rate = (valid_periods_after_first_paid[0].dividend / valid_periods_after_first_paid[valid_periods_after_first_paid.length - 1].dividend)
-    const average_dividend_growth_per_year = period_rate ** (1.0 / (valid_periods_after_first_paid.length / 12.0))
-    return average_dividend_growth_per_year
+  static getYearlyAverageDividendYield (data) {
+    const validPeriods = data.slice(1).slice(0, 12 * 5) // five year averages
+    const indexOfFirstPaidPeriod = validPeriods.findIndex(
+      p => p.dividend > 0
+    )
+    const indexOfLastPaidPeriod =
+      validPeriods.length -
+      1 -
+      [...validPeriods].reverse().findIndex(p => p.dividend > 0)
+    const validPeriodsAfterFirstPaid = validPeriods.slice(
+      indexOfFirstPaidPeriod,
+      indexOfLastPaidPeriod
+    )
+    const periodRate =
+      validPeriodsAfterFirstPaid[0].dividend /
+      validPeriodsAfterFirstPaid[validPeriodsAfterFirstPaid.length - 1]
+        .dividend
+    const averageDividendGrowthPerYear =
+      periodRate ** (1.0 / (validPeriodsAfterFirstPaid.length / 12.0))
+    return averageDividendGrowthPerYear
   }
 }
 
-async function getDividendStatistics(symbol) {
+async function getDividendStatistics (symbol) {
   const data = await getDividendPayments(symbol)
-  const yearlyAverageDividendYield = DividendProjector.getYearlyAverageDividendYield(data.history)
-  const yearlyAverageDividendYieldPercentage = 100 * (yearlyAverageDividendYield - 1.0)
-  const totalDividendAmount12m = DividendProjector.getTotalDividendAmount(data.history, 12)
-  const totalDividendAmount24m = DividendProjector.getTotalDividendAmount(data.history, 24)
+  const yearlyAverageDividendYield = DividendProjector.getYearlyAverageDividendYield(
+    data.history
+  )
+  const yearlyAverageDividendYieldPercentage =
+    100 * (yearlyAverageDividendYield - 1.0)
+  const totalDividendAmount12m = DividendProjector.getTotalDividendAmount(
+    data.history,
+    12
+  )
+  const totalDividendAmount24m = DividendProjector.getTotalDividendAmount(
+    data.history,
+    24
+  )
   return {
     symbol: data.symbol,
     updated: data.updated,
@@ -97,39 +124,104 @@ async function getDividendStatistics(symbol) {
     yearlyAverageDividendYield,
     yearlyAverageDividendYieldPercentage,
     totalDividendAmount12m,
-    totalDividendAmount24m,
+    totalDividendAmount24m
   }
 }
 
-async function getDividendPayments(symbol) {
-  const res = await AutoCache.call('monthly_adjusted', alpha.data.monthly_adjusted, symbol)
+async function getDividendPayments (symbol) {
+  const res = await AutoCache.call(
+    'monthly_adjusted',
+    alpha.data.monthly_adjusted,
+    symbol
+  )
   return {
     ...res.meta,
-    history: Object.entries(res.data).map(([time, {dividend}]) => ({time, dividend: parseFloat(dividend)}))
+    history: Object.entries(res.data).map(([time, { dividend }]) => ({
+      time,
+      dividend: parseFloat(dividend)
+    }))
+  }
+}
+
+// Easy chaining of complex async operations
+class ComplexOperation {
+  constructor (context) {
+    this.chain = []
+    this.context = context
+  }
+
+  static init (context = {}) {
+    return new ComplexOperation(context)
+  }
+
+  next ({ fn, errorCode }) {
+    this.chain.push({ fn, errorCode })
+    return this
+  }
+
+  middleware (fn) {
+    return this.next(fn())
+  }
+
+  assert ({ fn, errorCode }) {
+    const condFn = context => {
+      return new Promise((resolve, reject) => {
+        if (fn(context)) {
+          resolve({})
+        } else {
+          reject(new Error('Assertion failed.'))
+        }
+      })
+    }
+    return this.next({ fn: condFn, errorCode })
+  }
+
+  async evaluate ({ success, error }) {
+    for (const { fn, errorCode } of this.chain) {
+      try {
+        this.context = {
+          ...this.context,
+          ...(await fn(this.context))
+        }
+      } catch (e) {
+        console.log('ERROR')
+        console.log({ code: errorCode, data: e })
+        error({
+          code: errorCode,
+          message: 'Error',
+          data: e
+        })
+        return
+      }
+    }
+    console.log(this.context)
+    success(this.context)
   }
 }
 
 const ApiPaths = {
   Debug: {
-    ping: 'ping',
+    ping: 'ping'
+  },
+  Data: {
+    Dividends: 'get_data_dividends'
   }
 }
 
 // Define JSON-RPC Server
 const server = jayson.Server({
-
   //
   // Debug
   //
 
-  [ApiPaths.Debug.ping]: function ping(args, cb) {
-      cb(null, 'pong')
-  },
+  [ApiPaths.Debug.ping]: function ping (args, cb) {
+    cb(null, 'pong')
+  }
 })
 
 // Configure server
 const app = connect()
-app.use(cors({methods: ['POST']}))
+app.use(cors({ methods: ['POST'] }))
 app.use(bodyParser.json())
 app.use(server.middleware())
 
