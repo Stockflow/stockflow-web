@@ -59,8 +59,8 @@ class AutoCache {
 
   static async _call (key, fn, ...args) {
     console.log(`[Cache::FetchWet] ${key}`)
-    const raw_data = await fn(...args)
-    return alpha.util.polish(raw_data)
+    const rawData = await fn(...args)
+    return alpha.util.polish(rawData)
   }
 
   static async call (key, fn, ...args) {
