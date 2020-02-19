@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+'use strict'
+
 // Import libraries
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -8,8 +10,6 @@ import jayson from 'jayson'
 import cors from 'cors'
 import bodyParser from 'body-parser'
 import connect from 'connect'
-
-'use strict'
 
 // Load environment
 require('dotenv').config()
