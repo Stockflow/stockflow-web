@@ -1,0 +1,23 @@
+{
+  "name": "stockflow",
+  "version": "1.0.0",
+  "description": "![StockFlow Logo](stockflow.png)",
+  "main": "index.js",
+  "scripts": {
+    "backend": "pm2 start backend/main.js --node-args='-r esm'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SplittyDev/stockflow.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SplittyDev/stockflow/issues"
+  },
+  "homepage": "https://github.com/SplittyDev/stockflow#readme",
+  "dependencies": {
+    "esm": "^3.2.25"
+  }
+}
