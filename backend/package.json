@@ -12,11 +12,12 @@
   "license": "ISC",
   "dependencies": {
     "alphavantage": "^2.0.0",
-    "dotenv": "^8.2.0",
-    "esm": "^3.2.25",
     "body-parser": "^1.19.0",
     "connect": "^3.7.0",
     "cors": "^2.8.5",
-    "jayson": "^3.2.0"
+    "dotenv": "^8.2.0",
+    "esm": "^3.2.25",
+    "jayson": "^3.2.0",
+    "stock-info": "^1.1.0"
   }
 }

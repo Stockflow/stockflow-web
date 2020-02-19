@@ -10,6 +10,7 @@ import jayson from 'jayson'
 import cors from 'cors'
 import bodyParser from 'body-parser'
 import connect from 'connect'
+import StockInfo from 'stock-info'
 
 // Load environment
 require('dotenv').config()
@@ -33,9 +34,10 @@ class AutoCache {
 
   static verifyArgs (args1, args2) {
     let valid = args1.length === args2.length
+    if (!valid) console.log('[Cache] Parameter count mismatch')
     for (const i of args1.keys()) {
       if (!valid) break
-      valid &= args1[i] == args2[i]
+      valid &= args1[i] === args2[i]
     }
     if (!valid) console.log('[Cache] Detected invalid args')
     return valid
@@ -64,9 +66,10 @@ class AutoCache {
   }
 
   static async call (key, fn, ...args) {
+    const newKey = `${key}<${JSON.stringify(args)}>`
     return (
-      AutoCache.retrieve(key, args) ||
-      AutoCache.store(key, args, await AutoCache._call(key, fn, ...args))
+      AutoCache.retrieve(newKey, args) ||
+      AutoCache.store(newKey, args, await AutoCache._call(newKey, fn, ...args))
     )
   }
 }
@@ -199,12 +202,21 @@ class ComplexOperation {
   }
 }
 
+class StockInfoClient {
+  static async getStockInformation (symbol) {
+    return new Promise((resolve, reject) => {
+      AutoCache.call('stockinfo__getsinglestockinfo', StockInfo.getSingleStockInfo, symbol).then(resolve).catch(reject)
+    })
+  }
+}
+
 const ApiPaths = {
   Debug: {
     ping: 'ping'
   },
   Data: {
-    Dividends: 'get_data_dividends'
+    Dividends: 'get_data_dividends',
+    StockInfo: 'get_stock_info'
   }
 }
 
@@ -216,12 +228,17 @@ const server = jayson.Server({
 
   [ApiPaths.Debug.ping]: function ping (args, cb) {
     cb(null, 'pong')
+  },
+
+  [ApiPaths.Data.StockInfo]: function getStockInfo (args, cb) {
+    const error = { code: 1, message: 'Unable to fetch stock information.' }
+    StockInfoClient.getStockInformation(args.symbol).then(res => cb(null, res)).catch(() => cb(error))
   }
 })
 
 // Configure server
 const app = connect()
-app.use(cors({ methods: ['POST'] }))
+app.use(cors({ methods: ['GET', 'POST'] }))
 app.use(bodyParser.json())
 app.use(server.middleware())
 

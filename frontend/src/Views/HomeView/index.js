@@ -1,10 +1,12 @@
 import React from 'react'
 import styled from 'styled-components'
+import StockList from './StockList'
 
 const HomeView = ({ className }) => {
   return (
     <div className={className}>
       <img className='logo' src={`${process.env.PUBLIC_URL}/logo.png`} />
+      <StockList />
     </div>
   )
 }
