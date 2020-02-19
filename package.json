@@ -4,7 +4,8 @@
   "description": "![StockFlow Logo](stockflow.png)",
   "main": "index.js",
   "scripts": {
-    "backend": "pm2 start backend/main.js --node-args='-r esm'"
+    "backend": "pm2 start backend/main.js --node-args='-r esm'",
+    "frontend": "cd frontend; npm start"
   },
   "repository": {
     "type": "git",
