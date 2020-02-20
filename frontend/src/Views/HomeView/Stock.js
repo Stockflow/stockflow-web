@@ -112,19 +112,6 @@ white-space: nowrap;
 .symbol {
   font-size: 1.25rem;
   color: hsl(0,0%,45%);
-  width: 100%;
-}
-
-.name {
-  width: 1px;
-}
-
-.marketcap {
-  width: 1px;
-}
-
-.shares {
-  width: 1px;
 }
 
 .price {
