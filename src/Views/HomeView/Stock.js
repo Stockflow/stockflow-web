@@ -18,18 +18,13 @@ const Stock = ({ className, symbol, shares }) => {
 
   useEffect(() => {
     if (stockInfo !== null) return
-    window.fetch('http://localhost:6060', {
+    window.fetch('https://stockflow-api.now.sh/api/stockinfo', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'get_stock_info',
-        params: {
-          symbol
-        },
-        id: 1
+        symbol
       })
     }).then(res => res.json())
       .then(res => {
