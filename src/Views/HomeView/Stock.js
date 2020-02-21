@@ -28,7 +28,7 @@ const Stock = ({ className, symbol, shares }) => {
       })
     }).then(res => res.json())
       .then(res => {
-        setStockInfo(res.result)
+        setStockInfo(res)
       })
       .catch(console.log)
   })
